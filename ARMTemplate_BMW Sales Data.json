@@ -1,0 +1,854 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Data Factory name",
+            "defaultValue": "adfbmwsalesdata"
+        },
+        "linkedservice_datalake_bmwsalesdata_accountKey": {
+            "type": "secureString",
+            "metadata": "Secure string for 'accountKey' of 'linkedservice_datalake_bmwsalesdata'"
+        },
+        "ls_source_blob_bmw_sales_data_connectionString": {
+            "type": "secureString",
+            "metadata": "Secure string for 'connectionString' of 'ls_source_blob_bmw_sales_data'"
+        },
+        "linkedservice_http_source_bmwsalesdata_password": {
+            "type": "secureString",
+            "metadata": "Secure string for 'password' of 'linkedservice_http_source_bmwsalesdata'"
+        },
+        "ls_sql_bmwsalesdata_password": {
+            "type": "secureString",
+            "metadata": "Secure string for 'password' of 'ls_sql_bmwsalesdata'"
+        },
+        "linkedservice_datalake_bmwsalesdata_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "https://datalakebmwsalesdata.dfs.core.windows.net/"
+        },
+        "linkedservice_http_source_bmwsalesdata_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "https://www.kaggle.com"
+        },
+        "linkedservice_http_source_bmwsalesdata_properties_typeProperties_userName": {
+            "type": "string",
+            "defaultValue": "{\"username\":\"niloysamadder\",\"key\":\"e1a3785ae47e92ef73f4b74b22e50841\"}"
+        },
+        "ls_sql_bmwsalesdata_properties_typeProperties_server": {
+            "type": "string",
+            "defaultValue": "bmwsalesdata-srv.database.windows.net"
+        },
+        "ls_sql_bmwsalesdata_properties_typeProperties_database": {
+            "type": "string",
+            "defaultValue": "bmw_sales_db"
+        },
+        "ls_sql_bmwsalesdata_properties_typeProperties_userName": {
+            "type": "string",
+            "defaultValue": "adm-bmwsalesdata"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/linkedservice_datalake_bmwsalesdata')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobFS",
+                "typeProperties": {
+                    "url": "[parameters('linkedservice_datalake_bmwsalesdata_properties_typeProperties_url')]",
+                    "accountKey": {
+                        "type": "SecureString",
+                        "value": "[parameters('linkedservice_datalake_bmwsalesdata_accountKey')]"
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/pipeline_ingest_bmw_sales_data')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Copy BMW Sales Data",
+                        "type": "Copy",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "DelimitedTextSource",
+                                "storeSettings": {
+                                    "type": "HttpReadSettings",
+                                    "requestMethod": "GET"
+                                },
+                                "formatSettings": {
+                                    "type": "DelimitedTextReadSettings",
+                                    "compressionProperties": {
+                                        "type": "ZipDeflateReadSettings"
+                                    }
+                                }
+                            },
+                            "sink": {
+                                "type": "DelimitedTextSink",
+                                "storeSettings": {
+                                    "type": "AzureBlobFSWriteSettings"
+                                },
+                                "formatSettings": {
+                                    "type": "DelimitedTextWriteSettings",
+                                    "quoteAllText": true,
+                                    "fileExtension": ".txt"
+                                }
+                            },
+                            "enableStaging": false,
+                            "translator": {
+                                "type": "TabularTranslator",
+                                "typeConversion": true,
+                                "typeConversionSettings": {
+                                    "allowDataTruncation": true,
+                                    "treatBooleanAsNumber": false
+                                }
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "ds_source_http_bmwsalesdata",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "ds_sink_bmwsalesdata",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ]
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "annotations": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/ds_sink_bmwsalesdata')]",
+                "[concat(variables('factoryId'), '/datasets/ds_source_http_bmwsalesdata')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ls_source_blob_bmw_sales_data')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobStorage",
+                "typeProperties": {
+                    "connectionString": "[parameters('ls_source_blob_bmw_sales_data_connectionString')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ds_sink_bmwsalesdata')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "linkedservice_datalake_bmwsalesdata",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "DelimitedText",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "bmw_sales_data.csv",
+                        "folderPath": "bmw_sales_data",
+                        "fileSystem": "bmwsalesdata"
+                    },
+                    "columnDelimiter": ",",
+                    "escapeChar": "\\",
+                    "firstRowAsHeader": true,
+                    "quoteChar": "\""
+                },
+                "schema": [
+                    {
+                        "name": "Date",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Year",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Model",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Revenue",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Quantity Sold",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Region",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Country",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Channel",
+                        "type": "String"
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/linkedservice_datalake_bmwsalesdata')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/linkedservice_http_source_bmwsalesdata')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "HttpServer",
+                "typeProperties": {
+                    "url": "[parameters('linkedservice_http_source_bmwsalesdata_properties_typeProperties_url')]",
+                    "enableServerCertificateValidation": true,
+                    "authenticationType": "Basic",
+                    "userName": "[parameters('linkedservice_http_source_bmwsalesdata_properties_typeProperties_userName')]",
+                    "password": {
+                        "type": "SecureString",
+                        "value": "[parameters('linkedservice_http_source_bmwsalesdata_password')]"
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ds_source_http_bmwsalesdata')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "linkedservice_http_source_bmwsalesdata",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "DelimitedText",
+                "typeProperties": {
+                    "location": {
+                        "type": "HttpServerLocation",
+                        "relativeUrl": "api/v1/datasets/download/sherifsamyabdelkarem/sales-data-bmw"
+                    },
+                    "columnDelimiter": ",",
+                    "compressionCodec": "ZipDeflate",
+                    "escapeChar": "\\",
+                    "firstRowAsHeader": true,
+                    "quoteChar": "\""
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/linkedservice_http_source_bmwsalesdata')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/datflow_transform_bmw_sales_data')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "df_source_bmw_sales_data",
+                                "type": "DatasetReference"
+                            },
+                            "name": "BmwSalesDataSource"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "ds_transformed_bmwsalesdata",
+                                "type": "DatasetReference"
+                            },
+                            "name": "BMWSalesDataSink"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "FilterNullValues"
+                        },
+                        {
+                            "name": "SelectRenamingtheColumns"
+                        }
+                    ],
+                    "scriptLines": [
+                        "source(output(",
+                        "          Date as date 'dd/MM/yyyy',",
+                        "          Year as integer,",
+                        "          Model as string,",
+                        "          Revenue as integer,",
+                        "          {Quantity Sold} as integer,",
+                        "          Region as string,",
+                        "          Country as string,",
+                        "          Channel as string",
+                        "     ),",
+                        "     allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     ignoreNoFilesFound: false) ~> BmwSalesDataSource",
+                        "BmwSalesDataSource filter(!isNull(Date) && !isNull(Year) && !isNull(Model) && !isNull(Revenue) && !isNull({Quantity Sold}) && !isNull(Region) && !isNull(Country) && !isNull(Channel)) ~> FilterNullValues",
+                        "FilterNullValues select(mapColumn(",
+                        "          date = Date,",
+                        "          year = Year,",
+                        "          model = Model,",
+                        "          revenue = Revenue,",
+                        "          quantity_sold = {Quantity Sold},",
+                        "          region = Region,",
+                        "          country = Country,",
+                        "          channel = Channel",
+                        "     ),",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true) ~> SelectRenamingtheColumns",
+                        "SelectRenamingtheColumns sink(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     umask: 0022,",
+                        "     preCommands: [],",
+                        "     postCommands: [],",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true) ~> BMWSalesDataSink"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/df_source_bmw_sales_data')]",
+                "[concat(variables('factoryId'), '/datasets/ds_transformed_bmwsalesdata')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/df_source_bmw_sales_data')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "linkedservice_datalake_bmwsalesdata",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "DelimitedText",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "bmw_sales_data.csv",
+                        "folderPath": "bmw_sales_data",
+                        "fileSystem": "bmwsalesdata"
+                    },
+                    "columnDelimiter": ",",
+                    "escapeChar": "\\",
+                    "firstRowAsHeader": true,
+                    "quoteChar": "\""
+                },
+                "schema": [
+                    {
+                        "name": "Date",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Year",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Model",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Revenue",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Quantity Sold",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Region",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Country",
+                        "type": "String"
+                    },
+                    {
+                        "name": "Channel",
+                        "type": "String"
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/linkedservice_datalake_bmwsalesdata')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ds_transformed_bmwsalesdata')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "linkedservice_datalake_bmwsalesdata",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "DelimitedText",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "transformed_bmw_sales_data.csv",
+                        "folderPath": "bmw_sales_data",
+                        "fileSystem": "transformed"
+                    },
+                    "columnDelimiter": ",",
+                    "escapeChar": "\\",
+                    "firstRowAsHeader": true,
+                    "quoteChar": "\""
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/linkedservice_datalake_bmwsalesdata')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/pipeline_transform_bmw_sales_data')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "DataFlow_Transform_BMW_Sales_Data",
+                        "type": "ExecuteDataFlow",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "dataflow": {
+                                "referenceName": "datflow_transform_bmw_sales_data",
+                                "type": "DataFlowReference",
+                                "parameters": {},
+                                "datasetParameters": {
+                                    "BmwSalesDataSource": {},
+                                    "BMWSalesDataSink": {}
+                                }
+                            },
+                            "staging": {},
+                            "compute": {
+                                "coreCount": 8,
+                                "computeType": "General"
+                            },
+                            "traceLevel": "Fine"
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "annotations": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/dataflows/datflow_transform_bmw_sales_data')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/pipeline_load_sql_bmw_sales_data')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Copy BMW Sales Data to SQL Database",
+                        "type": "Copy",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "DelimitedTextSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobFSReadSettings",
+                                    "recursive": true,
+                                    "wildcardFileName": "*",
+                                    "enablePartitionDiscovery": false
+                                },
+                                "formatSettings": {
+                                    "type": "DelimitedTextReadSettings"
+                                }
+                            },
+                            "sink": {
+                                "type": "AzureSqlSink",
+                                "preCopyScript": "TRUNCATE TABLE\nsales.bmw_sales_data",
+                                "writeBehavior": "insert",
+                                "sqlWriterUseTableLock": false,
+                                "disableMetricsCollection": false
+                            },
+                            "enableStaging": false,
+                            "translator": {
+                                "type": "TabularTranslator",
+                                "mappings": [
+                                    {
+                                        "source": {
+                                            "name": "date",
+                                            "type": "String",
+                                            "physicalType": "String"
+                                        },
+                                        "sink": {
+                                            "name": "date",
+                                            "type": "DateTime",
+                                            "physicalType": "date"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "year",
+                                            "type": "String",
+                                            "physicalType": "String"
+                                        },
+                                        "sink": {
+                                            "name": "year",
+                                            "type": "Int32",
+                                            "physicalType": "int"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "model",
+                                            "type": "String",
+                                            "physicalType": "String"
+                                        },
+                                        "sink": {
+                                            "name": "model",
+                                            "type": "String",
+                                            "physicalType": "varchar"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "revenue",
+                                            "type": "String",
+                                            "physicalType": "String"
+                                        },
+                                        "sink": {
+                                            "name": "revenue",
+                                            "type": "Decimal",
+                                            "physicalType": "decimal",
+                                            "scale": 0,
+                                            "precision": 18
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "quantity_sold",
+                                            "type": "String",
+                                            "physicalType": "String"
+                                        },
+                                        "sink": {
+                                            "name": "quantity_sold",
+                                            "type": "Int32",
+                                            "physicalType": "int"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "region",
+                                            "type": "String",
+                                            "physicalType": "String"
+                                        },
+                                        "sink": {
+                                            "name": "region",
+                                            "type": "String",
+                                            "physicalType": "varchar"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "country",
+                                            "type": "String",
+                                            "physicalType": "String"
+                                        },
+                                        "sink": {
+                                            "name": "country",
+                                            "type": "String",
+                                            "physicalType": "varchar"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "name": "channel",
+                                            "type": "String",
+                                            "physicalType": "String"
+                                        },
+                                        "sink": {
+                                            "name": "channel",
+                                            "type": "String",
+                                            "physicalType": "varchar"
+                                        }
+                                    }
+                                ],
+                                "typeConversion": true,
+                                "typeConversionSettings": {
+                                    "allowDataTruncation": true,
+                                    "treatBooleanAsNumber": false
+                                }
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "ds_transformed_bmwsalesdata",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "ds_sql_bmwsalesdata",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ]
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "annotations": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/ds_transformed_bmwsalesdata')]",
+                "[concat(variables('factoryId'), '/datasets/ds_sql_bmwsalesdata')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ls_sql_bmwsalesdata')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureSqlDatabase",
+                "typeProperties": {
+                    "server": "[parameters('ls_sql_bmwsalesdata_properties_typeProperties_server')]",
+                    "database": "[parameters('ls_sql_bmwsalesdata_properties_typeProperties_database')]",
+                    "encrypt": "mandatory",
+                    "trustServerCertificate": false,
+                    "authenticationType": "SQL",
+                    "userName": "[parameters('ls_sql_bmwsalesdata_properties_typeProperties_userName')]",
+                    "password": {
+                        "type": "SecureString",
+                        "value": "[parameters('ls_sql_bmwsalesdata_password')]"
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ds_sql_bmwsalesdata')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "ls_sql_bmwsalesdata",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "AzureSqlTable",
+                "schema": [
+                    {
+                        "name": "date",
+                        "type": "date"
+                    },
+                    {
+                        "name": "year",
+                        "type": "int",
+                        "precision": 10
+                    },
+                    {
+                        "name": "model",
+                        "type": "varchar"
+                    },
+                    {
+                        "name": "revenue",
+                        "type": "decimal",
+                        "precision": 18,
+                        "scale": 0
+                    },
+                    {
+                        "name": "quantity_sold",
+                        "type": "int",
+                        "precision": 10
+                    },
+                    {
+                        "name": "country",
+                        "type": "varchar"
+                    },
+                    {
+                        "name": "channel",
+                        "type": "varchar"
+                    }
+                ],
+                "typeProperties": {
+                    "schema": "sales",
+                    "table": "bmw_sales_data"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/ls_sql_bmwsalesdata')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/pipeline_execute_bmwsalesdata')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Execute Data Ingestion of BMW_Sales_Data",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "pipeline_ingest_bmw_sales_data",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    },
+                    {
+                        "name": "Execute Data Transformation of BMW_Sales_Data",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [
+                            {
+                                "activity": "Execute Data Ingestion of BMW_Sales_Data",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "pipeline_transform_bmw_sales_data",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    },
+                    {
+                        "name": "Execute Loading of BMW_Sales_Data to SQL Database",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [
+                            {
+                                "activity": "Execute Data Transformation of BMW_Sales_Data",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "pipeline_load_sql_bmw_sales_data",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "folder": {
+                    "name": "Execute"
+                },
+                "annotations": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/pipeline_ingest_bmw_sales_data')]",
+                "[concat(variables('factoryId'), '/pipelines/pipeline_transform_bmw_sales_data')]",
+                "[concat(variables('factoryId'), '/pipelines/pipeline_load_sql_bmw_sales_data')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/trigger_execute_bmwsalesdata_pipeline')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Started",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "pipeline_execute_bmwsalesdata",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
+                    }
+                ],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Day",
+                        "interval": 1,
+                        "startTime": "2024-11-07T15:00:00",
+                        "timeZone": "W. Europe Standard Time",
+                        "schedule": {}
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/pipeline_execute_bmwsalesdata')]"
+            ]
+        }
+    ]
+}
