@@ -39,7 +39,7 @@ A star schema was implemented in Azure SQL Database to support analytical querie
 - **Year-Over-Year (YOY) Growth**: Growth in revenue from previous year.
 - **Total Quantity of Sold**: Total quantity of cars sold.
 - **Average Revenue per Sale**: Revenue generated on average per sale.
-- 
+  
 Three dashboards were created in Power BI to present the findings interactively:
 
 ### 1. BMW Sales Overview
