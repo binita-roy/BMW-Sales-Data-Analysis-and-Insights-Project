@@ -66,7 +66,7 @@ Three dashboards were created in Power BI to present the findings interactively:
 - The Online sales channel has generated the highest amount (33.79%) of Average Revenue per Sale, although this sales channel was introduced in 2023.
 
 ## Recommendation
-- Monitoring the recommended Key Performance Metrics (KPIs) to observe the progress.
+- Monitoring the recommended Key Performance Indicators (KPIs) to observe the progress.
 - Promoting the top-performing car models based on the regions.
 - Promoting the Online sales channel for increasing the customer engagement as well as the revenue.
 
